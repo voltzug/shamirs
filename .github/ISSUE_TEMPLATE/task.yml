@@ -1,0 +1,32 @@
+name: "Task"
+description: "Define a task to be completed"
+type: "Task"
+labels: ["Task"]
+assignees: []
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What needs to be done?
+      placeholder: Brief summary of the task.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance Criteria
+      description: List the conditions that must be met for this task to be considered complete.
+      placeholder: |
+        - [ ] Criterion 1
+        - [ ] Criterion 2
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Additional Details
+      description: Any extra context, links, or notes.
+      placeholder: Links, references, or implementation notes.
+    validations:
+      required: false
