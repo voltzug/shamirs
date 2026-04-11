@@ -1,6 +1,6 @@
 [package]
 name = "blahaj"
-version = "0.6.0"
+version = "0.7.0"
 authors = ["Ryan Heywood <ryan@distrust.co>"]
 description = "Fast, small, and secure Shamir's Secret Sharing"
 homepage = "https://git.distrust.co/public/blahaj"
@@ -19,9 +19,9 @@ zeroize_memory = ["zeroize"]
 
 [dependencies]
 rand = { version = "0.8", default-features = false }
-hashbrown = "0.15"
+hashbrown = "0.15.5"
 arbitrary = { version = "0.4.7", features = ["derive"], optional = true }
-zeroize = { version = "1.2.0", features = ["zeroize_derive"], optional = true }
+zeroize = { version = "1.8.2", features = ["zeroize_derive"], optional = true }
 
 [dev-dependencies]
 criterion = "0.3"
