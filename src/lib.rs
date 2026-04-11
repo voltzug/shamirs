@@ -2,7 +2,7 @@
 //!
 //! Usage example (std):
 //! ```
-//! use blahaj::{ Sharks, Share };
+//! use shamirs::{ Sharks, Share };
 //!
 //! // Set a minimum threshold of 10 shares
 //! let sharks = Sharks(10);
@@ -14,13 +14,13 @@
 //! let shares: Vec<Share> = dealer.take(10).collect();
 //! // Recover the original secret!
 //! let secret = sharks.recover(shares.as_slice()).unwrap();
-//! assert_eq!(secret, vec![1, 2, 3, 4]);
+//! assert_eq!(secret, vec![1, 2, 3, 4].into());
 //! # }
 //! ```
 //!
 //! Usage example (no std):
 //! ```
-//! use blahaj::{ Sharks, Share };
+//! use shamirs::{ Sharks, Share };
 //! use rand_chacha::rand_core::SeedableRng;
 //!
 //! // Set a minimum threshold of 10 shares
@@ -32,7 +32,7 @@
 //! let shares: Vec<Share> = dealer.take(10).collect();
 //! // Recover the original secret!
 //! let secret = sharks.recover(shares.as_slice()).unwrap();
-//! assert_eq!(secret, vec![1, 2, 3, 4]);
+//! assert_eq!(secret, vec![1, 2, 3, 4].into());
 //! ```
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -53,7 +53,7 @@ pub use share::Share;
 ///
 /// Usage example:
 /// ```
-/// # use blahaj::{ Sharks, Share };
+/// # use shamirs::{ Sharks, Share };
 /// // Set a minimum threshold of 10 shares
 /// let sharks = Sharks(10);
 /// // Obtain an iterator over the shares for secret [1, 2, 3, 4]
@@ -64,7 +64,7 @@ pub use share::Share;
 /// let shares: Vec<Share> = dealer.take(10).collect();
 /// // Recover the original secret!
 /// let secret = sharks.recover(shares.as_slice()).unwrap();
-/// assert_eq!(secret, vec![1, 2, 3, 4]);
+/// assert_eq!(secret, vec![1, 2, 3, 4].into());
 /// # }
 /// ```
 pub struct Sharks(pub u8);
@@ -79,7 +79,7 @@ impl Sharks {
     ///
     /// Example:
     /// ```
-    /// # use blahaj::{ Sharks, Share };
+    /// # use shamirs::{ Sharks, Share };
     /// # use rand_chacha::rand_core::SeedableRng;
     /// # let sharks = Sharks(3);
     /// // Obtain an iterator over the shares for secret [1, 2]
@@ -106,7 +106,7 @@ impl Sharks {
     ///
     /// Example:
     /// ```
-    /// # use blahaj::{ Sharks, Share };
+    /// # use shamirs::{ Sharks, Share };
     /// # let sharks = Sharks(3);
     /// // Obtain an iterator over the shares for secret [1, 2]
     /// let dealer = sharks.dealer(&[1, 2]);
@@ -124,7 +124,7 @@ impl Sharks {
     ///
     /// Example:
     /// ```
-    /// # use blahaj::{ Sharks, Share };
+    /// # use shamirs::{ Sharks, Share };
     /// # use rand_chacha::rand_core::SeedableRng;
     /// # let sharks = Sharks(3);
     /// # let mut rng = rand_chacha::ChaCha8Rng::from_seed([0x90; 32]);
@@ -138,6 +138,7 @@ impl Sharks {
     /// secret = sharks.recover(&shares);
     /// // Not enough shares to recover secret
     /// assert!(secret.is_err());
+    #[cfg(not(feature = "zeroize_memory"))]
     pub fn recover<'a, T>(&self, shares: T) -> Result<Vec<u8>, &str>
     where
         T: IntoIterator<Item = &'a Share>,
@@ -154,16 +155,50 @@ impl Sharks {
 
             if Some(share.y.len()) != share_length {
                 return Err("All shares must have the same length");
-            } else {
-                keys.insert(share.x.0);
-                values.push(share.clone());
             }
+            if !keys.insert(share.x.0) {
+                return Err("Duplicate share X coordinate found");
+            }
+            values.push(share.clone());
         }
 
         if keys.is_empty() || (keys.len() < self.0 as usize) {
             Err("Not enough shares to recover original secret")
         } else {
             Ok(math::interpolate(values.as_slice()))
+        }
+    }
+
+    #[cfg(feature = "zeroize_memory")]
+    pub fn recover<'a, T>(&self, shares: T) -> Result<zeroize::Zeroizing<Vec<u8>>, &str>
+    where
+        T: IntoIterator<Item = &'a Share>,
+        T::IntoIter: Iterator<Item = &'a Share>,
+    {
+        let mut share_length: Option<usize> = None;
+        let mut keys: HashSet<u8> = HashSet::new();
+        let mut values: Vec<Share> = Vec::new();
+
+        for share in shares.into_iter() {
+            if share_length.is_none() {
+                share_length = Some(share.y.len());
+            }
+
+            if Some(share.y.len()) != share_length {
+                return Err("All shares must have the same length");
+            }
+            if !keys.insert(share.x.0) {
+                return Err("Duplicate share X coordinate found");
+            }
+            values.push(share.clone());
+        }
+
+        if keys.is_empty() || (keys.len() < self.0 as usize) {
+            Err("Not enough shares to recover original secret")
+        } else {
+            Ok(zeroize::Zeroizing::new(math::interpolate(
+                values.as_slice(),
+            )))
         }
     }
 }
@@ -176,7 +211,7 @@ mod tests {
     impl Sharks {
         #[cfg(not(feature = "std"))]
         fn make_shares(&self, secret: &[u8]) -> impl Iterator<Item = Share> {
-            use rand_chacha::{rand_core::SeedableRng, ChaCha8Rng};
+            use rand_chacha::{ChaCha8Rng, rand_core::SeedableRng};
 
             let mut rng = ChaCha8Rng::from_seed([0x90; 32]);
             self.dealer_rng(secret, &mut rng)
@@ -207,12 +242,23 @@ mod tests {
         let secret = sharks.recover(&shares);
         assert!(secret.is_err());
     }
+    #[test]
+    fn test_duplicate_shares_push_err() {
+        let sharks = Sharks(2);
+        let mut shares: Vec<Share> = sharks.make_shares(&[1, 2, 3]).take(2).collect();
+        shares.push(Share {
+            x: shares[0].x.clone(),
+            y: shares[0].y.clone(),
+        });
+        let secret = sharks.recover(&shares);
+        assert!(secret.is_err());
+    }
 
     #[test]
     fn test_integration_works() {
         let sharks = Sharks(255);
         let shares: Vec<Share> = sharks.make_shares(&[1, 2, 3, 4]).take(255).collect();
         let secret = sharks.recover(&shares).unwrap();
-        assert_eq!(secret, vec![1, 2, 3, 4]);
+        assert_eq!(secret, vec![1, 2, 3, 4].into());
     }
 }

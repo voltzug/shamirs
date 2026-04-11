@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-04-11
+### Changed
+- When `zeroize_memory` is enabled, recovered secrets are returned as `Zeroizing<Vec<u8>>`, ensuring memory is wiped on drop
+- Bumped `zeroize` to 1.8.2, `hashbrown` to 0.15.5, and crate version to 0.7.0
+- Rename project to `shamirs`
+
+### Fixed
+- Fixed cache-timing side channel in GF256 math by removing table lookups and using constant-time shift/add multiplication and exponentiation (no LOG/EXP tables, no branches, no cache leaks)
+- `recover()` now rejects duplicate X coordinates in shares, preventing Lagrange math from breaking and returning invalid results
+
+
 ## [0.6.0] - 2024-11-16
 ### Changed
 - Rename project to `blahaj` following soft-fork
