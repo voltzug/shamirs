@@ -2,7 +2,7 @@
 //!
 //! Usage example (std):
 //! ```
-//! use blahaj::{ Sharks, Share };
+//! use shamirs::{ Sharks, Share };
 //!
 //! // Set a minimum threshold of 10 shares
 //! let sharks = Sharks(10);
@@ -20,7 +20,7 @@
 //!
 //! Usage example (no std):
 //! ```
-//! use blahaj::{ Sharks, Share };
+//! use shamirs::{ Sharks, Share };
 //! use rand_chacha::rand_core::SeedableRng;
 //!
 //! // Set a minimum threshold of 10 shares
@@ -53,7 +53,7 @@ pub use share::Share;
 ///
 /// Usage example:
 /// ```
-/// # use blahaj::{ Sharks, Share };
+/// # use shamirs::{ Sharks, Share };
 /// // Set a minimum threshold of 10 shares
 /// let sharks = Sharks(10);
 /// // Obtain an iterator over the shares for secret [1, 2, 3, 4]
@@ -79,7 +79,7 @@ impl Sharks {
     ///
     /// Example:
     /// ```
-    /// # use blahaj::{ Sharks, Share };
+    /// # use shamirs::{ Sharks, Share };
     /// # use rand_chacha::rand_core::SeedableRng;
     /// # let sharks = Sharks(3);
     /// // Obtain an iterator over the shares for secret [1, 2]
@@ -106,7 +106,7 @@ impl Sharks {
     ///
     /// Example:
     /// ```
-    /// # use blahaj::{ Sharks, Share };
+    /// # use shamirs::{ Sharks, Share };
     /// # let sharks = Sharks(3);
     /// // Obtain an iterator over the shares for secret [1, 2]
     /// let dealer = sharks.dealer(&[1, 2]);
@@ -124,7 +124,7 @@ impl Sharks {
     ///
     /// Example:
     /// ```
-    /// # use blahaj::{ Sharks, Share };
+    /// # use shamirs::{ Sharks, Share };
     /// # use rand_chacha::rand_core::SeedableRng;
     /// # let sharks = Sharks(3);
     /// # let mut rng = rand_chacha::ChaCha8Rng::from_seed([0x90; 32]);

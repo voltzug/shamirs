@@ -12,7 +12,7 @@ use zeroize::Zeroize;
 ///
 /// Usage example:
 /// ```
-/// use blahaj::{Sharks, Share};
+/// use shamirs::{Sharks, Share};
 /// use core::convert::TryFrom;
 /// # use rand_chacha::rand_core::SeedableRng;
 /// # fn send_to_printer(_: Vec<u8>) {}
