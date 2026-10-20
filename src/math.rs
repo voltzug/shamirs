@@ -2,7 +2,7 @@
 
 use alloc::vec::Vec;
 
-use rand::distributions::{Distribution, Uniform};
+use rand::distr::{Distribution, Uniform};
 
 use super::field::GF256;
 use super::share::Share;
@@ -35,7 +35,7 @@ pub fn interpolate(shares: &[Share]) -> Vec<u8> {
 pub fn random_polynomial<R: rand::Rng>(s: GF256, k: u8, rng: &mut R) -> Vec<GF256> {
     let k = k as usize;
     let mut poly = Vec::with_capacity(k);
-    let between = Uniform::new_inclusive(0, 255);
+    let between = Uniform::new_inclusive(0, 255).unwrap();
 
     for _ in 1..k {
         poly.push(GF256(between.sample(rng)));

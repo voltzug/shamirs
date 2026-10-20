@@ -1,6 +1,6 @@
 [package]
 name = "shamirs"
-version = "0.7.0"
+version = "0.7.1"
 authors = ["voltzug"]
 description = "Small, and secure Shamir's Secret Sharing"
 repository = "https://github.com/voltzug/shamirs"
@@ -17,14 +17,14 @@ fuzzing = ["std", "arbitrary"]
 zeroize_memory = ["zeroize"]
 
 [dependencies]
-rand = { version = "0.8", default-features = false }
-hashbrown = "0.15.5"
-arbitrary = { version = "0.4.7", features = ["derive"], optional = true }
-zeroize = { version = "1.8.2", features = ["zeroize_derive"], optional = true }
+rand = { version = "0.10.3", features = ["thread_rng"], default-features = false }
+hashbrown = "0.17.1"
+arbitrary = { version = "1.5.0", features = ["derive"], optional = true }
+zeroize = { version = "1.9.1", features = ["zeroize_derive"], optional = true }
 
 [dev-dependencies]
-criterion = "0.3"
-rand_chacha = "0.3"
+criterion = "0.8.2"
+rand_chacha = "0.10.0"
 
 [[bench]]
 name = "benchmarks"
