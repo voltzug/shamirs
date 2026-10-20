@@ -32,7 +32,7 @@
 //! let shares: Vec<Share> = dealer.take(10).collect();
 //! // Recover the original secret!
 //! let secret = sharks.recover(shares.as_slice()).unwrap();
-//! assert_eq!(secret, vec![1, 2, 3, 4].into());
+//! assert_eq!(secret.as_slice(), &[1u8, 2, 3, 4]);
 //! ```
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -206,7 +206,7 @@ impl Sharks {
 #[cfg(test)]
 mod tests {
     use super::{Share, Sharks};
-    use alloc::{vec, vec::Vec};
+    use alloc::vec::Vec;
 
     impl Sharks {
         #[cfg(not(feature = "std"))]
@@ -259,6 +259,6 @@ mod tests {
         let sharks = Sharks(255);
         let shares: Vec<Share> = sharks.make_shares(&[1, 2, 3, 4]).take(255).collect();
         let secret = sharks.recover(&shares).unwrap();
-        assert_eq!(secret, vec![1, 2, 3, 4].into());
+        assert_eq!(secret.as_slice(), &[1u8, 2, 3, 4]);
     }
 }
