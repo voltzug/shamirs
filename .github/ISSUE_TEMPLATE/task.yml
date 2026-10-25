@@ -4,6 +4,13 @@ type: "Task"
 labels: ["Task"]
 assignees: []
 body:
+  - type: input
+    id: index
+    attributes:
+      label: Index
+      description: Task ID (e.g., T-<version>-NN)
+    validations:
+      required: false
   - type: textarea
     id: summary
     attributes:

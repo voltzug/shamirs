@@ -2,7 +2,7 @@
 
 use alloc::vec::Vec;
 
-use rand::distributions::{Distribution, Uniform};
+use rand::distr::{Distribution, Uniform};
 
 use super::field::GF256;
 use super::share::Share;
@@ -17,12 +17,18 @@ pub fn interpolate(shares: &[Share]) -> Vec<u8> {
             shares
                 .iter()
                 .map(|s_i| {
-                    shares
+                    let weight = shares
                         .iter()
                         .filter(|s_j| s_j.x != s_i.x)
-                        .map(|s_j| s_j.x.clone() / (s_j.x.clone() - s_i.x.clone()))
-                        .product::<GF256>()
-                        * s_i.y[s].clone()
+                        .try_fold(GF256(1), |acc, s_j| {
+                            let numerator = s_j.x.clone();
+                            let denominator = s_j.x.clone() - s_i.x.clone();
+                            numerator
+                                .div(denominator)
+                                .map(|v| acc * v)
+                        })
+                        .expect("interpolate: non-zero denominator invariant violated (filtered X coordinates must differ)");
+                    weight * s_i.y[s].clone()
                 })
                 .sum::<GF256>()
                 .0
@@ -35,7 +41,7 @@ pub fn interpolate(shares: &[Share]) -> Vec<u8> {
 pub fn random_polynomial<R: rand::Rng>(s: GF256, k: u8, rng: &mut R) -> Vec<GF256> {
     let k = k as usize;
     let mut poly = Vec::with_capacity(k);
-    let between = Uniform::new_inclusive(0, 255);
+    let between = Uniform::new_inclusive(0, 255).unwrap();
 
     for _ in 1..k {
         poly.push(GF256(between.sample(rng)));
@@ -94,5 +100,21 @@ mod tests {
         let shares: Vec<Share> = iter.take(10).collect();
         let root = interpolate(&shares);
         assert_eq!(root, vec![185]);
+    }
+
+    #[test]
+    fn interpolate_with_x_zero_share() {
+        let shares = vec![
+            Share {
+                x: GF256(0),
+                y: vec![GF256(7)],
+            },
+            Share {
+                x: GF256(1),
+                y: vec![GF256(5)],
+            },
+        ];
+        let root = interpolate(&shares);
+        assert_eq!(root, vec![7]);
     }
 }
