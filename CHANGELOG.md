@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.1] - Unreleased
+### Added
+
+### Changed
+- `/` operator is no longer available on field values.
+
+### Fixed
+- Division by zero in GF256 arithmetic now returns an error instead of silently returning zero.
+
 ## [0.7.0] - 2026-04-11
 ### Changed
 - When `zeroize_memory` is enabled, recovered secrets are returned as `Zeroizing<Vec<u8>>`, ensuring memory is wiped on drop
