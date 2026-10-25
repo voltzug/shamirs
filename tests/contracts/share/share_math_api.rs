@@ -13,14 +13,3 @@ fn share_field_values_support_add_sub_mul() {
     let mul_res: u8 = (x1.clone() * x2.clone()).0;
     let _ = mul_res;
 }
-
-// Intentionally pinned here; T2 removes this test and impl Div.
-#[test]
-fn div_operator_available_on_field_values() {
-    let share1 = sample_share();
-    let share2 = sample_share();
-    let x1 = share1.x.clone();
-    let x2 = share2.x.clone();
-    let div_res: u8 = (x1 / x2).0;
-    let _ = div_res;
-}

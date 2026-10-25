@@ -1,8 +1,8 @@
 // Basic operations overrided for the Galois Field 256 (2**8)
-// Constant time. Uses shift + add for multiply, and Fermat's Little Theorem ($b^{-1} = b^{254}$) for division.
+// Constant-time multiply/exponentiation. Division uses Fermat's Little Theorem ($b^{-1} = b^{254}$) with exactly one branch on the divisor.
 
 use core::iter::{Product, Sum};
-use core::ops::{Add, Div, Mul, Sub};
+use core::ops::{Add, Mul, Sub};
 
 #[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
@@ -15,6 +15,35 @@ use zeroize::Zeroize;
 #[cfg_attr(feature = "zeroize_memory", derive(Zeroize))]
 #[cfg_attr(feature = "zeroize_memory", zeroize(drop))]
 pub struct GF256(pub u8);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum FieldError {
+    DivisionByZero,
+}
+
+impl GF256 {
+    pub(crate) fn div(self, other: Self) -> Result<Self, FieldError> {
+        if other.0 == 0 {
+            return Err(FieldError::DivisionByZero);
+        }
+
+        let b = other.0;
+        let b2 = mul_u8(b, b);
+        let b4 = mul_u8(b2, b2);
+        let b8 = mul_u8(b4, b4);
+        let b16 = mul_u8(b8, b8);
+        let b32 = mul_u8(b16, b16);
+        let b64 = mul_u8(b32, b32);
+        let b128 = mul_u8(b64, b64);
+
+        let inv = mul_u8(
+            mul_u8(mul_u8(b2, b4), mul_u8(b8, b16)),
+            mul_u8(mul_u8(b32, b64), b128),
+        );
+
+        Ok(Self(mul_u8(self.0, inv)))
+    }
+}
 
 #[allow(clippy::suspicious_arithmetic_impl)]
 impl Add for GF256 {
@@ -56,35 +85,6 @@ impl Mul for GF256 {
     /// Constant-time peasant multiplication
     fn mul(self, other: Self) -> Self::Output {
         Self(mul_u8(self.0, other.0))
-    }
-}
-
-#[allow(clippy::suspicious_arithmetic_impl)]
-impl Div for GF256 {
-    type Output = Self;
-
-    /// Fermat's Little Theorem: `b^-1 = b^254` in GF(256)
-    /// Constant-time exponentiation
-    fn div(self, other: Self) -> Self::Output {
-        if self.0 == 0 {
-            return Self(0);
-        }
-
-        let b = other.0;
-        let b2 = mul_u8(b, b);
-        let b4 = mul_u8(b2, b2);
-        let b8 = mul_u8(b4, b4);
-        let b16 = mul_u8(b8, b8);
-        let b32 = mul_u8(b16, b16);
-        let b64 = mul_u8(b32, b32);
-        let b128 = mul_u8(b64, b64);
-
-        let inv = mul_u8(
-            mul_u8(mul_u8(b2, b4), mul_u8(b8, b16)),
-            mul_u8(mul_u8(b32, b64), b128),
-        );
-
-        Self(mul_u8(self.0, inv))
     }
 }
 
@@ -237,7 +237,40 @@ mod tests {
         ];
 
         for (i, a) in answers.iter().enumerate() {
-            assert_eq!((GF256(LOG_TABLE[i]) / GF256(EXP_TABLE[i])).0, *a);
+            assert_eq!(GF256(LOG_TABLE[i]).div(GF256(EXP_TABLE[i])).unwrap().0, *a);
+        }
+    }
+
+    #[test]
+    fn div_zero_divisor_errors() {
+        assert!(matches!(
+            GF256(5).div(GF256(0)),
+            Err(super::FieldError::DivisionByZero)
+        ));
+        assert!(matches!(
+            GF256(0).div(GF256(0)),
+            Err(super::FieldError::DivisionByZero)
+        ));
+    }
+
+    #[test]
+    fn div_zero_numerator_ok() {
+        assert_eq!(GF256(0).div(GF256(1)).unwrap().0, 0);
+        assert_eq!(GF256(0).div(GF256(42)).unwrap().0, 0);
+    }
+
+    #[test]
+    fn div_roundtrip_mul_inv() {
+        use core::ops::Mul;
+        for b in 1u8..=255 {
+            let gb = GF256(b);
+            let inv_gb = gb.clone().div(gb.clone()).unwrap();
+            assert_eq!(inv_gb.0, 1);
+            for a in 0u8..=255 {
+                let ga = GF256(a);
+                let res = ga.clone().mul(gb.clone()).div(gb.clone()).unwrap();
+                assert_eq!(res.0, ga.0);
+            }
         }
     }
 
