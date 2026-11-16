@@ -105,6 +105,59 @@ mod tests {
     use super::GF256;
     use alloc::vec;
 
+    fn reference_mul(a: u8, b: u8) -> u8 {
+        let mut product = 0u16;
+        for bit in 0..8 {
+            if (b >> bit) & 1 == 1 {
+                product ^= u16::from(a) << bit;
+            }
+        }
+        for bit in (8..=14).rev() {
+            if product & (1 << bit) != 0 {
+                product ^= 0x11d << (bit - 8);
+            }
+        }
+        product as u8
+    }
+
+    fn reference_inv(b: u8) -> Option<u8> {
+        if b == 0 {
+            return None;
+        }
+        (1..=u8::MAX).find(|&c| reference_mul(b, c) == 1)
+    }
+
+    #[test]
+    fn known_answer_products() {
+        let anchors = [
+            (0x02, 0x80, 0x1d),
+            (0x02, 0x1d, 0x3a),
+            (0x03, 0x03, 0x05),
+            (0x57, 0x83, 0x31),
+        ];
+        for (a, b, expected) in anchors {
+            assert_eq!((GF256(a) * GF256(b)).0, expected, "0x{a:02x} * 0x{b:02x}");
+            assert_eq!(reference_mul(a, b), expected, "0x{a:02x} * 0x{b:02x}");
+        }
+    }
+
+    #[test]
+    fn known_answer_inverses() {
+        let anchors = [(0x02, 0x8e), (0x03, 0xf4), (0x80, 0x1b)];
+        for (element, expected) in anchors {
+            assert_eq!(
+                GF256(1).div(GF256(element)).unwrap().0,
+                expected,
+                "1 / 0x{element:02x}"
+            );
+            assert_eq!(
+                reference_inv(element),
+                Some(expected),
+                "inverse of 0x{element:02x}"
+            );
+        }
+    }
+
     const LOG_TABLE: [u8; 256] = [
         0x00, 0x00, 0x01, 0x19, 0x02, 0x32, 0x1a, 0xc6, 0x03, 0xdf, 0x33, 0xee, 0x1b, 0x68, 0xc7,
         0x4b, 0x04, 0x64, 0xe0, 0x0e, 0x34, 0x8d, 0xef, 0x81, 0x1c, 0xc1, 0x69, 0xf8, 0xc8, 0x08,
