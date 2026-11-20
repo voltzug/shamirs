@@ -1,5 +1,5 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use std::convert::TryFrom;
+use criterion::{criterion_group, criterion_main, Criterion};
+use std::{convert::TryFrom, hint::black_box};
 
 use shamirs::{Share, Sharks};
 

@@ -32,7 +32,7 @@
 //! let shares: Vec<Share> = dealer.take(10).collect();
 //! // Recover the original secret!
 //! let secret = sharks.recover(shares.as_slice()).unwrap();
-//! assert_eq!(secret, vec![1, 2, 3, 4].into());
+//! assert_eq!(secret.as_slice(), &[1u8, 2, 3, 4]);
 //! ```
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -114,7 +114,7 @@ impl Sharks {
     /// let shares: Vec<Share> = dealer.take(3).collect();
     #[cfg(feature = "std")]
     pub fn dealer(&self, secret: &[u8]) -> impl Iterator<Item = Share> {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rngs::ThreadRng::default();
         self.dealer_rng(secret, &mut rng)
     }
 
@@ -206,12 +206,12 @@ impl Sharks {
 #[cfg(test)]
 mod tests {
     use super::{Share, Sharks};
-    use alloc::{vec, vec::Vec};
+    use alloc::vec::Vec;
 
     impl Sharks {
         #[cfg(not(feature = "std"))]
         fn make_shares(&self, secret: &[u8]) -> impl Iterator<Item = Share> {
-            use rand_chacha::{ChaCha8Rng, rand_core::SeedableRng};
+            use rand_chacha::{rand_core::SeedableRng, ChaCha8Rng};
 
             let mut rng = ChaCha8Rng::from_seed([0x90; 32]);
             self.dealer_rng(secret, &mut rng)
@@ -259,6 +259,6 @@ mod tests {
         let sharks = Sharks(255);
         let shares: Vec<Share> = sharks.make_shares(&[1, 2, 3, 4]).take(255).collect();
         let secret = sharks.recover(&shares).unwrap();
-        assert_eq!(secret, vec![1, 2, 3, 4].into());
+        assert_eq!(secret.as_slice(), &[1u8, 2, 3, 4]);
     }
 }
