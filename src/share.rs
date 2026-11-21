@@ -8,7 +8,11 @@ use arbitrary::Arbitrary;
 #[cfg(feature = "zeroize_memory")]
 use zeroize::Zeroize;
 
-/// A share used to reconstruct the secret. Can be serialized to and from a byte array.
+/// A share used to reconstruct a secret, serializable to and from bytes.
+///
+/// Its X coordinate identifies the share and its value vector holds one field value per secret byte.
+/// A share's byte form is the X coordinate followed by the value bytes, and parsing requires at least two bytes.
+/// An empty secret produces shares with empty value vectors, which serialize to one byte and cannot be parsed back.
 ///
 /// Usage example:
 /// ```
@@ -41,7 +45,7 @@ pub struct Share {
     pub y: Vec<GF256>,
 }
 
-/// Obtains a byte vector from a `Share` instance
+/// Serializes a share as its X coordinate followed by its value bytes.
 impl From<&Share> for Vec<u8> {
     fn from(s: &Share) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(s.y.len() + 1);
@@ -51,7 +55,7 @@ impl From<&Share> for Vec<u8> {
     }
 }
 
-/// Obtains a `Share` instance from a byte slice
+/// Parses a share from an X coordinate followed by its value bytes, requiring at least two bytes.
 impl core::convert::TryFrom<&[u8]> for Share {
     type Error = &'static str;
 
