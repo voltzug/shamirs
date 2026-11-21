@@ -1,3 +1,5 @@
+// Share representation and byte conversions: an X coordinate followed by one field value per secret byte.
+
 use alloc::vec::Vec;
 
 use super::field::GF256;

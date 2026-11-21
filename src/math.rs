@@ -1,4 +1,4 @@
-// A module which contains necessary algorithms to compute Shamir's shares and recover secrets
+// Polynomial generation, share evaluation, and Lagrange interpolation for Shamir secret sharing.
 
 use alloc::vec::Vec;
 
@@ -8,9 +8,9 @@ use super::field::GF256;
 use super::share::Share;
 
 // Finds the [root of the Lagrange polynomial](https://en.wikipedia.org/wiki/Shamir%27s_Secret_Sharing#Computationally_efficient_approach).
-// The expected `shares` argument format is the same as the output by the `get_evaluator´ function.
-// Where each (key, value) pair corresponds to one share, where the key is the `x` and the value is a vector of `y`,
-// where each element corresponds to one of the secret's byte chunks.
+// The `shares` argument has the format produced by `get_evaluator`: each share's X coordinate is a key and its value vector holds one field value per secret byte.
+// The inner loop pairs only shares whose X coordinates differ, so every denominator `x_j - x_i` is non-zero and the division cannot fail.
+// A zero X coordinate is legal and contributes a zero numerator to the other basis terms.
 pub fn interpolate(shares: &[Share]) -> Vec<u8> {
     (0..shares[0].y.len())
         .map(|s| {
@@ -36,8 +36,9 @@ pub fn interpolate(shares: &[Share]) -> Vec<u8> {
         .collect()
 }
 
-// Generates `k` polynomial coefficients, being the last one `s` and the others randomly generated between `[0, 255]`.
+// Builds `k` coefficients for `k >= 1`, with `s` as the constant term and the others drawn from `[0, 255]`.
 // Coefficient degrees go from higher to lower in the returned vector order.
+// With `k = 0` the result still has one coefficient, the secret.
 pub fn random_polynomial<R: rand::Rng>(s: GF256, k: u8, rng: &mut R) -> Vec<GF256> {
     let k = k as usize;
     let mut poly = Vec::with_capacity(k);
@@ -51,10 +52,10 @@ pub fn random_polynomial<R: rand::Rng>(s: GF256, k: u8, rng: &mut R) -> Vec<GF25
     poly
 }
 
-// Returns an iterator over the points of the `polys` polynomials passed as argument.
-// Each item of the iterator is a tuple `(x, [f_1(x), f_2(x)..])` where eaxh `f_i` is the result for the ith polynomial.
+// Returns an iterator over the evaluations of `polys` at consecutive X coordinates.
+// Each item is a share with X coordinate `x` and one value `f_i(x)` per polynomial.
 // Each polynomial corresponds to one byte chunk of the original secret.
-// The iterator will start at `x = 1` and end at `x = 255`.
+// The iterator starts at `x = 1` and ends at `x = 255`, so it yields at most 255 shares.
 pub fn get_evaluator(polys: Vec<Vec<GF256>>) -> impl Iterator<Item = Share> {
     (1..=u8::MAX).map(GF256).map(move |x| Share {
         x: x.clone(),
