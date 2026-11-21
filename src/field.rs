@@ -45,7 +45,10 @@ impl GF256 {
     }
 }
 
-#[allow(clippy::suspicious_arithmetic_impl)]
+#[allow(
+    clippy::suspicious_arithmetic_impl,
+    reason = "in characteristic two, addition and subtraction are both bitwise XOR, so XOR is the correct body"
+)]
 impl Add for GF256 {
     type Output = GF256;
 
@@ -54,7 +57,10 @@ impl Add for GF256 {
     }
 }
 
-#[allow(clippy::suspicious_arithmetic_impl)]
+#[allow(
+    clippy::suspicious_arithmetic_impl,
+    reason = "in characteristic two, addition and subtraction are both bitwise XOR, so XOR is the correct body"
+)]
 impl Sub for GF256 {
     type Output = Self;
 
@@ -78,7 +84,6 @@ fn mul_u8(mut a: u8, mut b: u8) -> u8 {
     p
 }
 
-#[allow(clippy::suspicious_arithmetic_impl)]
 impl Mul for GF256 {
     type Output = Self;
 

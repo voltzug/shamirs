@@ -207,20 +207,102 @@ impl Sharks {
 mod tests {
     use super::{Share, Sharks};
     use alloc::vec::Vec;
+    use rand_chacha::{rand_core::SeedableRng, ChaCha8Rng};
+
+    const THRESHOLDS: [u8; 5] = [1, 2, 3, 5, 255];
+    const SECRET_LENGTHS: [usize; 5] = [0, 1, 3, 16, 32];
 
     impl Sharks {
-        #[cfg(not(feature = "std"))]
         fn make_shares(&self, secret: &[u8]) -> impl Iterator<Item = Share> {
-            use rand_chacha::{rand_core::SeedableRng, ChaCha8Rng};
-
             let mut rng = ChaCha8Rng::from_seed([0x90; 32]);
             self.dealer_rng(secret, &mut rng)
         }
+    }
 
-        #[cfg(feature = "std")]
-        fn make_shares(&self, secret: &[u8]) -> impl Iterator<Item = Share> {
-            self.dealer(secret)
+    fn assert_roundtrip(threshold: u8, secret: &[u8], recovered: usize) {
+        let sharks = Sharks(threshold);
+        let shares: Vec<Share> = sharks.make_shares(secret).take(recovered).collect();
+        assert_eq!(
+            shares.len(),
+            recovered,
+            "threshold {threshold}, secret length {}",
+            secret.len()
+        );
+        assert!(
+            shares.iter().all(|share| share.y.len() == secret.len()),
+            "threshold {threshold}, secret length {}",
+            secret.len()
+        );
+        assert_eq!(
+            sharks.recover(&shares).unwrap().as_slice(),
+            secret,
+            "threshold {threshold}, secret length {}",
+            secret.len()
+        );
+    }
+
+    #[test]
+    fn roundtrip_matrix() {
+        for threshold in THRESHOLDS {
+            for length in SECRET_LENGTHS {
+                if threshold == 255 && length > 1 {
+                    continue;
+                }
+                let secret: Vec<u8> = (0..length).map(|index| index as u8).collect();
+                assert_roundtrip(threshold, &secret, threshold as usize);
+                if threshold != 255 {
+                    assert_roundtrip(threshold, &secret, threshold as usize + 1);
+                }
+            }
         }
+    }
+
+    #[test]
+    fn no_shares_at_threshold_one_errors() {
+        let sharks = Sharks(1);
+        let shares: Vec<Share> = Vec::new();
+        assert!(sharks.recover(&shares).is_err());
+    }
+
+    #[test]
+    fn duplicate_x_in_sufficient_set_errors() {
+        let sharks = Sharks(2);
+        let mut shares: Vec<Share> = sharks.make_shares(&[1, 2, 3]).take(3).collect();
+        shares.push(Share {
+            x: shares[0].x.clone(),
+            y: shares[0].y.clone(),
+        });
+        assert!(sharks.recover(&shares).is_err());
+    }
+
+    #[test]
+    fn mismatched_value_lengths_errors() {
+        let sharks = Sharks(2);
+        let first: Share = sharks.make_shares(&[1, 2, 3]).next().unwrap();
+        let second: Share = sharks.make_shares(&[1]).nth(1).unwrap();
+        assert_ne!(first.x.0, second.x.0);
+        assert_ne!(first.y.len(), second.y.len());
+        assert!(sharks.recover(&[first, second]).is_err());
+    }
+
+    #[test]
+    fn dealer_yields_255_distinct_coordinates_on_over_request() {
+        let sharks = Sharks(1);
+        let shares: Vec<Share> = sharks.make_shares(&[1]).take(300).collect();
+        assert_eq!(shares.len(), 255);
+        let mut coordinates: Vec<u8> = shares.iter().map(|share| share.x.0).collect();
+        coordinates.sort_unstable();
+        coordinates.dedup();
+        assert_eq!(coordinates.len(), 255);
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn thread_local_dealer_roundtrip() {
+        let sharks = Sharks(3);
+        let shares: Vec<Share> = sharks.dealer(&[1, 2, 3]).take(3).collect();
+        assert_eq!(shares.len(), 3);
+        assert_eq!(sharks.recover(&shares).unwrap().as_slice(), &[1u8, 2, 3]);
     }
 
     #[test]
