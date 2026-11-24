@@ -9,6 +9,16 @@ keywords = ["shamir", "secret", "sharing", "share", "cryptography"]
 categories = ["algorithms", "cryptography", "mathematics"]
 license = "MIT"
 edition = "2021"
+include = [
+    "/src/**/*.rs",
+    "/tests/**/*.rs",
+    "/benches/**/*.rs",
+    "/Cargo.toml",
+    "/README.md",
+    "/CONTRIBUTING.md",
+    "/COPYRIGHT",
+    "/LICENSE-MIT",
+]
 
 [features]
 default = ["std", "zeroize_memory"]
