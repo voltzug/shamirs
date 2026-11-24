@@ -1,6 +1,6 @@
 [package]
 name = "shamirs"
-version = "0.7.1"
+version = "0.7.2"
 authors = ["voltzug"]
 description = "Small, and secure Shamir's Secret Sharing"
 repository = "https://github.com/voltzug/shamirs"
@@ -9,6 +9,16 @@ keywords = ["shamir", "secret", "sharing", "share", "cryptography"]
 categories = ["algorithms", "cryptography", "mathematics"]
 license = "MIT"
 edition = "2021"
+include = [
+    "/src/**/*.rs",
+    "/tests/**/*.rs",
+    "/benches/**/*.rs",
+    "/Cargo.toml",
+    "/README.md",
+    "/CONTRIBUTING.md",
+    "/COPYRIGHT",
+    "/LICENSE-MIT",
+]
 
 [features]
 default = ["std", "zeroize_memory"]
@@ -17,10 +27,10 @@ fuzzing = ["std", "arbitrary"]
 zeroize_memory = ["zeroize"]
 
 [dependencies]
-rand = { version = "0.10.3", features = ["thread_rng"], default-features = false }
+rand = { version = "0.10.4", features = ["thread_rng"], default-features = false }
 hashbrown = "0.17.1"
 arbitrary = { version = "1.5.0", features = ["derive"], optional = true }
-zeroize = { version = "1.9.1", features = ["zeroize_derive"], optional = true }
+zeroize = { version = "1.9.2", features = ["zeroize_derive"], optional = true }
 
 [dev-dependencies]
 criterion = "0.8.2"

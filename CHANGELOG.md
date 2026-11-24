@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.2] - 2026-11-24
+### Changed
+- Bumped `zeroize` to 1.9.2, `rand` to 0.10.4
+
+### Fixed
+- Strict include pattern rules for Cargo.toml
+
 ## [0.7.1] - 2026-11-24
 ### Added
 - Independent field verification against a reference implementation and known-answer vectors.
