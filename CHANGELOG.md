@@ -6,12 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.7.1] - Unreleased
 ### Added
+- Independent field verification against a reference implementation and known-answer vectors.
+- Expanded acceptance coverage for share bytes, dealer limits, empty secrets, and recovery rejections.
+- Contributor guide covering tooling, checks, commits, branches, and pull requests.
 
 ### Changed
 - `/` operator is no longer available on field values.
+- Lint suppressions narrowed to the exact expressions they cover.
 
 ### Fixed
 - Division by zero in GF256 arithmetic now returns an error instead of silently returning zero.
+- Corrected documentation, links, and package metadata.
 
 ## [0.7.0] - 2026-04-11
 ### Changed
