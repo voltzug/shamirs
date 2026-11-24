@@ -61,7 +61,7 @@ Run the Criterion benchmarks with `cargo bench`.
 
 | Version | CPU | toolchain | obtain_shares_dealer | step_shares_dealer | recover_secret | share_from_bytes | share_to_bytes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| [v0.7.1 (unreleased)](https://github.com/voltzug/shamirs/releases) | AMD Ryzen 3 3200U @ 2.60GHz | rustc 1.99.1 , criterion 0.8.2 | 1.6755 µs / 1.6837 µs / 1.6922 µs | 2.4324 ns / 2.4893 ns / 2.5768 ns | 7.7791 ms / 7.8102 ms / 7.8428 ms | 38.850 ns / 40.087 ns / 41.346 ns | 29.935 ns / 30.178 ns / 30.464 ns |
+| [v0.7.1](https://github.com/voltzug/shamirs/releases/tag/v.0.7.1) | AMD Ryzen 3 3200U @ 2.60GHz | rustc 1.99.1 , criterion 0.8.2 | 1.6755 µs / 1.6837 µs / 1.6922 µs | 2.4324 ns / 2.4893 ns / 2.5768 ns | 7.7791 ms / 7.8102 ms / 7.8428 ms | 38.850 ns / 40.087 ns / 41.346 ns | 29.935 ns / 30.178 ns / 30.464 ns |
 | [pre-fix fork fc517a8](https://github.com/voltzug/shamirs/commit/fc517a8) | AMD Ryzen 3 3200U @ 2.60GHz | rustc 1.99.1 , criterion 0.3 | 1.6560 µs / 1.6653 µs / 1.6757 µs | 2.0557 ns / 2.0854 ns / 2.1182 ns | 275.54 µs / 284.47 µs / 292.72 µs | 45.964 ns / 46.222 ns / 46.521 ns | 21.971 ns / 22.583 ns / 23.336 ns |
 
 ## Contributing
