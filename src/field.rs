@@ -1,5 +1,6 @@
-// Basic operations overrided for the Galois Field 256 (2**8)
-// Constant-time multiply/exponentiation. Division uses Fermat's Little Theorem ($b^{-1} = b^{254}$) with exactly one branch on the divisor.
+// Arithmetic over GF(2^8) with reduction polynomial 0x11D.
+// Addition and subtraction are XOR; multiplication and Fermat exponentiation are branch-free and table-free.
+// Division multiplies by the Fermat inverse and branches once, on a zero divisor.
 
 use core::iter::{Product, Sum};
 use core::ops::{Add, Mul, Sub};

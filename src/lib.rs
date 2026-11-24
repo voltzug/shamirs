@@ -1,4 +1,16 @@
-//! Fast, small and secure [Shamir's Secret Sharing](https://en.wikipedia.org/wiki/Shamir%27s_Secret_Sharing) library crate
+//! Fast, small and secure [Shamir's Secret Sharing](https://en.wikipedia.org/wiki/Shamir%27s_Secret_Sharing) library crate.
+//!
+//! Secrets are byte slices of any length, including the empty slice.
+//! Each share holds one GF(2^8) field value per secret byte.
+//! The threshold is the minimum number of distinct shares needed to recover a secret, and the dealer builds a polynomial of degree one less than the threshold for each byte.
+//!
+//! Field arithmetic is GF(2^8) with reduction polynomial `0x11D`.
+//! Multiplication is branch-free shift-and-add and division is multiplication by the Fermat inverse, neither using lookup tables.
+//! Division branches once on a zero divisor; the remaining arithmetic is branch-free.
+//!
+//! The dealer assigns X coordinates from 1 through 255 and therefore emits at most 255 shares.
+//! Recovery accepts a share with X coordinate zero even though the dealer never emits one.
+//! Recovery rejects share sets with differing value-vector lengths, repeated X coordinates, or fewer distinct shares than the threshold.
 //!
 //! Usage example (std):
 //! ```
@@ -48,8 +60,11 @@ use hashbrown::HashSet;
 use field::GF256;
 pub use share::Share;
 
-/// Tuple struct which implements methods to generate shares and recover secrets over a 256 bits Galois Field.
-/// Its only parameter is the minimum shares threshold.
+/// A Shamir threshold over GF(2^8).
+///
+/// The `u8` parameter is the threshold: the minimum number of distinct shares needed to recover a secret.
+/// A threshold of `k` builds a polynomial of degree `k - 1` for each secret byte.
+/// The dealer emits at most 255 shares, one per X coordinate from 1 through 255.
 ///
 /// Usage example:
 /// ```
@@ -70,12 +85,11 @@ pub use share::Share;
 pub struct Sharks(pub u8);
 
 impl Sharks {
-    /// This method is useful when `std` is not available. For typical usage
-    /// see the `dealer` method.
+    /// Deals `secret` using the supplied random number generator.
     ///
-    /// Given a `secret` byte slice, returns an `Iterator` along new shares.
-    /// The maximum number of shares that can be generated is 256.
-    /// A random number generator has to be provided.
+    /// This method is available without `std`; with `std`, see the `dealer` method for the thread-local generator.
+    /// The iterator yields one share per X coordinate from 1 through 255, so it ends after 255 shares.
+    /// Each share carries one value per byte of `secret`; an empty `secret` yields shares with empty value vectors.
     ///
     /// Example:
     /// ```
@@ -101,8 +115,10 @@ impl Sharks {
         math::get_evaluator(polys)
     }
 
-    /// Given a `secret` byte slice, returns an `Iterator` along new shares.
-    /// The maximum number of shares that can be generated is 256.
+    /// Deals `secret` using the thread-local random number generator.
+    ///
+    /// The iterator yields one share per X coordinate from 1 through 255, so it ends after 255 shares.
+    /// Each share carries one value per byte of `secret`; an empty `secret` yields shares with empty value vectors.
     ///
     /// Example:
     /// ```
@@ -118,9 +134,11 @@ impl Sharks {
         self.dealer_rng(secret, &mut rng)
     }
 
-    /// Given an iterable collection of shares, recovers the original secret.
-    /// If the number of distinct shares is less than the minimum threshold an `Err` is returned,
-    /// otherwise an `Ok` containing the secret.
+    /// Recovers a secret from an iterable collection of shares.
+    ///
+    /// Recovery rejects shares whose value vectors differ in length, repeated X coordinates, and sets with fewer distinct shares than the threshold.
+    /// On success it returns the recovered bytes, wrapped so memory is wiped on drop when `zeroize_memory` is enabled.
+    /// An empty secret recovers as an empty slice.
     ///
     /// Example:
     /// ```
@@ -169,6 +187,28 @@ impl Sharks {
         }
     }
 
+    /// Recovers a secret from an iterable collection of shares.
+    ///
+    /// Recovery rejects shares whose value vectors differ in length, repeated X coordinates, and sets with fewer distinct shares than the threshold.
+    /// On success it returns the recovered bytes, wrapped so memory is wiped on drop when `zeroize_memory` is enabled.
+    /// An empty secret recovers as an empty slice.
+    ///
+    /// Example:
+    /// ```
+    /// # use shamirs::{ Sharks, Share };
+    /// # use rand_chacha::rand_core::SeedableRng;
+    /// # let sharks = Sharks(3);
+    /// # let mut rng = rand_chacha::ChaCha8Rng::from_seed([0x90; 32]);
+    /// # let mut shares: Vec<Share> = sharks.dealer_rng(&[1], &mut rng).take(3).collect();
+    /// // Recover original secret from shares
+    /// let mut secret = sharks.recover(&shares);
+    /// // Secret correctly recovered
+    /// assert!(secret.is_ok());
+    /// // Remove shares for demonstration purposes
+    /// shares.clear();
+    /// secret = sharks.recover(&shares);
+    /// // Not enough shares to recover secret
+    /// assert!(secret.is_err());
     #[cfg(feature = "zeroize_memory")]
     pub fn recover<'a, T>(&self, shares: T) -> Result<zeroize::Zeroizing<Vec<u8>>, &str>
     where
